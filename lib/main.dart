@@ -1,4 +1,5 @@
 import 'package:expensetracker/models/transaction.dart';
+import 'package:expensetracker/widgets/chart.dart';
 import 'package:expensetracker/widgets/new_transaction.dart';
 import 'package:expensetracker/widgets/transaction_list.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(
+        primarySwatch: Colors.deepPurple,
+      ),
       debugShowCheckedModeBanner: false,
       title: 'Personal Expenses',
       home: MyHomePage(),
@@ -26,7 +30,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Transaction(
       id: 't1',
       title: "New Mobile",
-      amount: 357.8,
+      amount: 23.99,
       date: DateTime.now(),
     ),
     Transaction(
@@ -35,13 +39,25 @@ class _MyHomePageState extends State<MyHomePage> {
       amount: 69.2,
       date: DateTime.now(),
     ),
+
   ];
 
-  void _addNewTransaction(String txtitle, double txamount) {
+  List<Transaction> get _recentTransactions {
+    return _userTransactions.where((tx) {
+      return tx.date.isAfter(
+        DateTime.now().subtract(
+          Duration(days: 7),
+        ),
+      );
+    }).toList();
+  }
+
+  void _addNewTransaction(
+      String txtitle, double txamount, DateTime chosenDate) {
     final newtx = Transaction(
       title: txtitle,
       amount: txamount,
-      date: DateTime.now(),
+      date: chosenDate,
       id: DateTime.now().toString(),
     );
 
@@ -59,8 +75,29 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  void _deleteTransaction(String id) {
+    setState(() {
+      _userTransactions.removeWhere((tx) {
+        return tx.id == id;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appBar = AppBar(
+      title: const Text("Expenses Tracker"),
+      centerTitle: true,
+      actions: <Widget>[
+        IconButton(
+          onPressed: () {
+            _showModalNewTransaction(context);
+          },
+          icon: const Icon(Icons.add),
+        ),
+      ],
+    );
+
     return GestureDetector(
       onTap: () {
         FocusScopeNode currentFocus = FocusScope.of(context);
@@ -70,40 +107,17 @@ class _MyHomePageState extends State<MyHomePage> {
       },
       child: Scaffold(
         backgroundColor: Color(0xfffbf0e3),
-        appBar: AppBar(
-          backgroundColor: Colors.deepPurpleAccent,
-          title: const Text("Expenses Tracker"),
-          centerTitle: true,
-          actions: <Widget>[
-            IconButton(
-              onPressed: () {
-                _showModalNewTransaction(context);
-              },
-              icon: const Icon(Icons.add),
-            ),
-          ],
-        ),
-        drawer: Drawer(),
+        appBar: appBar,
         body: SingleChildScrollView(
           child: Column(
             children: <Widget>[
-              Container(
-                width: double.infinity,
-                height: 250,
-                padding:
-                    const EdgeInsets.only(top: 15.0, left: 8.0, right: 8.0),
-                child: const Card(
-                  color: Color(0xfff0ffc2),
-                  elevation: 5,
-                  shadowColor: Colors.deepOrangeAccent,
-                  child: Text("Chart !!!"),
-                ),
-              ),
-              TransactionList(_userTransactions),
+              Chart(_recentTransactions),
+              TransactionList(_userTransactions, _deleteTransaction),
             ],
           ),
         ),
         floatingActionButton: FloatingActionButton(
+          backgroundColor: Colors.orangeAccent,
           onPressed: () {
             _showModalNewTransaction(context);
           },
